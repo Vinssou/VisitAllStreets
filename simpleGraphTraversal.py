@@ -48,6 +48,13 @@ class City:
         return False
     return True
 
+
+def computeTravelCost(travel):
+  totalCost = 0
+  for inter in travel:
+    totalCost = totalCost + inter[1]
+  return totalCost
+
 def main (argv):
   ############
   ### init ###
@@ -130,10 +137,10 @@ def main (argv):
   ### recurse!
   currentNode = city.mIntersections[start]
   travel = [(currentNode, 0)]
-  run(currentNode, travel, city)
+  optimalTravel = run(currentNode, travel, city)
   
   # done
-  print ('Solving done.')
+  print ('Solving done. : ', optimalTravel, ' and cost ', computeTravelCost(optimalTravel) )
 
   
   
@@ -149,14 +156,11 @@ def run(currentNode, travel, city):
 
   if len(travel) > maxMulti * float(len(city.mStreets)):
     # print("Too long abort")
-    return
+    return None
 
   if city.fullyVisted():
-    totalCost = 0
-    for inter in travel:
-      totalCost = totalCost + inter[1]
-    print('Solution ' + str(travel) + " cost " + str(totalCost), flush=True)
-    return 
+    print('Solution ' + str(travel) + " cost " + str(computeTravelCost(travel)), flush=True)
+    return travel
 
   potentialStreets = []
   for street in currentNode.mStreets:
@@ -173,6 +177,7 @@ def run(currentNode, travel, city):
     
   potentialStreets.sort(key=sortStreet)
   nextNode = None
+  travels = []
   for street in potentialStreets:
 
     bConnectedStreet = False
@@ -197,7 +202,19 @@ def run(currentNode, travel, city):
     #print('City: \n', city)
     #print('Copy City: \n', nextCity)
     #input ('Press any key.')
-    run(nextCityNextNode, nextTravel, nextCity)
+    currentTravel = run(nextCityNextNode, nextTravel, nextCity)
+    if currentTravel != None:
+      travels.append(currentTravel)
+
+
+  leastCost = 1000000000000
+  leastTravel = None
+  for thisTravel in travels:
+    totalCost = computeTravelCost(thisTravel)
+    if totalCost < leastCost:
+      leastTravel = thisTravel
+      leastCost = totalCost
+  return leastTravel
   
 
 if __name__ == "__main__":
