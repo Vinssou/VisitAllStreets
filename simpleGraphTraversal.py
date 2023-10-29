@@ -178,29 +178,23 @@ def run(currentNode, travel, city):
   potentialStreets.sort(key=sortStreet)
   nextNode = None
   travels = []
-  for street in potentialStreets:
-
-    bConnectedStreet = False
+  for index, street in enumerate(potentialStreets):
     if street.mNode1 == currentNode:
       nextNode = street.mNode2
-      bConnectedStreet = True
     if street.mNode2 == currentNode:
       nextNode = street.mNode1
-      bConnectedStreet = True
-    if not bConnectedStreet:
-      assert(False)
-      continue
 
-    # TODO don't copy last one
-    nextCity = copy.deepcopy(city)
-    nextTravel = copy.deepcopy(travel)
-    nextStreet = nextCity.mStreets[street.mName]
+    # Don t copy last element
+    if index+1 == len(potentialStreets):
+      nextCity = city
+      nextTravel = travel
+    else:
+      nextCity = copy.deepcopy(city)
+      nextTravel = copy.deepcopy(travel)
+    nextCityStreet = nextCity.mStreets[street.mName]
     nextCityNextNode = nextCity.mIntersections[nextNode.mName]
-    nextStreet.mVisitedCount = nextStreet.mVisitedCount + 1
-    #print(street.mVisitedCount)
+    nextCityStreet.mVisitedCount = nextCityStreet.mVisitedCount + 1
     nextTravel.append((nextCityNextNode, street.mCost))
-    #print('City: \n', city)
-    #print('Copy City: \n', nextCity)
     #input ('Press any key.')
     currentTravel = run(nextCityNextNode, nextTravel, nextCity)
     if currentTravel != None:
