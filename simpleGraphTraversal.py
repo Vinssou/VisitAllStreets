@@ -600,7 +600,6 @@ def runHierholzerAlgo(startNode, city):
       if bHavFound:
         break
         
-  input("Hierholzer done...")
   return travel
     
 
