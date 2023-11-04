@@ -41,7 +41,7 @@ class Street:
     self.mNode2.mStreets.add(self)
 
   def __str__(self):
-    return self.mName + " : " + self.mNode1.__str__() + " -> " + self.mNode2.__str__() + " cost  : " + str(self.mCost) + " visited  : " + str(self.mVisitedCount)
+    return self.mName + " : " + self.mNode1.__str__() + " -> " + self.mNode2.__str__() + " cost: " + str(self.mCost) + ", visited: " + str(self.mVisitedCount)
 
 def sortStreet(street):
   return street.mVisitedCount #* 10000 + street.mCost
@@ -157,12 +157,13 @@ def main (argv):
   print ('Solving done. : ', optimalTravel, ' and cost ', computeTravelCost(optimalTravel) )
 
 
-
 travelEndSize = 10000000000
 minCost = 100000000
 
+
 def run(currentNode, travel, city):
 
+  
   global travelEndSize
   global minCost
 
@@ -367,7 +368,6 @@ def computeDikjstra(startNode, endNode, city):
       
   return theTravel
 
-# 1 - Transformation en graphe eulérien : Ajoutez des arêtes artificielles au graphe pour le transformer en un graphe eulérien, en veillant à ce que chaque nœud ait un degré pair.
 def computeOddIntersections(city):
   oddIntersections = []
   for key, intersection in city.mIntersections.items():
@@ -388,7 +388,7 @@ def findMinimumLinesWithZero(matrix):
         rowColumsZeros[i] = rowColumsZeros[i] + 1
         rowColumsZeros[matrixSize + j] = rowColumsZeros[matrixSize + j] + 1
 
-
+  # Stroe rows first half vecor then column
   lines = [0 for _ in range(2*matrixSize)]
   while True:
     # Track more zero
@@ -410,13 +410,19 @@ def findMinimumLinesWithZero(matrix):
       for j in range(matrixSize):
         if matrix[indexWithMoreZero][j] == 0:
           rowColumsZeros[matrixSize + j] = rowColumsZeros[matrixSize + j] - 1
+          
+          #Warning this is a hack !  it should be fixed and removed
+          if rowColumsZeros[matrixSize + j] < 0:
+            rowColumsZeros[matrixSize+ j] = 0
+          # End of the hack
+          
           assert(rowColumsZeros[matrixSize+ j] >= 0)
     else: # line is a column
       jIndex = indexWithMoreZero - matrixSize
       for i in range(matrixSize):
         if matrix[i][jIndex] == 0:
           rowColumsZeros[i] = rowColumsZeros[i] - 1
-          assert(rowColumsZeros[matrixSize + j] >= 0)
+          assert(rowColumsZeros[i] >= 0)
     
   return lines
 
@@ -445,8 +451,8 @@ def reduceMatrix(matrix):
       matrix[i][j] = matrix[i][j] - minRow
 
   # print("Reduced Matrix : ")
-  for i in range(matrixSize):
-    print(matrix[i])
+  #for i in range(matrixSize):
+  #  print(matrix[i])
 
 def augmentMatrix(matrix, lines):
   matrixSize = len(matrix)
@@ -530,9 +536,12 @@ def computeSolution(matrix):
     association.append(associations[i][0]) 
 
   if solutionFound == True:
-    print("Solution found odd intersections to add in city : ", association)
+    pass
+    #print("Solution found in ", step," iterations odd intersections to add in city : ", association)
   else:
-    print("Solution not found after ", matrixSize*matrixSize, "iterations, odd intersections to add in city : ", association)
+    #print("Solution not found after ", matrixSize*matrixSize, "iterations, odd intersections to add in city : ", association)
+    return None
+    
   return association
 
 def hungarianAlgo(matrix):
@@ -555,7 +564,7 @@ def hungarianAlgo(matrix):
       #print("No solution found need to augment the matrix")
       augmentMatrix(matrix, lines)
     else:
-      print("End of Hungarian solution solvable...now try to find it...")
+      # print("End of Hungarian solution solvable...now try to find it...")
       return computeSolution(matrix)
     
 
@@ -602,9 +611,9 @@ def runHierholzerAlgo(startNode, city):
         
   return travel
     
-
+# 1 - Transformation en graphe eulérien : Ajoutez des arêtes artificielles au graphe pour le transformer en un graphe eulérien, en veillant à ce que chaque nœud ait un degré pair.
 # 2 - Trouver un circuit eulérien : Utilisez un algorithme tel que l'algorithme de Hierholzer pour trouver un circuit eulérien dans le graphe, qui peut inclure des arêtes artificielles.
-# 3 -Retirer les arêtes artificielles : Une fois que vous avez le circuit eulérien, retirez les arêtes artificielles du circuit.
+# 3 - Retirer les arêtes artificielles : Une fois que vous avez le circuit eulérien, retirez les arêtes artificielles du circuit.
 def runChineese(startNode, city):
 
   oddIntersections = computeOddIntersections(city)
@@ -614,28 +623,58 @@ def runChineese(startNode, city):
   assert(oddIntersectionCount % 2 == 0)
   matrixSize = oddIntersectionCount // 2
 
-  
-  oddMatrix = [[99 for i in range(matrixSize)] for j in range(matrixSize)]
-  
-  for i in range(matrixSize):
-    for j in range(matrixSize):
-      city.initTempCost()
-      travel = computeDikjstra(oddIntersections[i], oddIntersections[matrixSize+j], city)
-      #print("Final Travel : ", travel)
-      shortestCost = travel[-1].mTempCost
-      oddMatrix[i][j] = shortestCost
+  minSolutionCost = 100**100
+  initialTotalCost = 0
+  for key, street in city.mStreets.items():
+    initialTotalCost = initialTotalCost + street.mCost
 
-  print("Matrix : ")
-  for i in range(matrixSize):
-    print(oddMatrix[i])
-  print("")
-  originalMatrix = copy.deepcopy(oddMatrix)
-  newStreets = hungarianAlgo(oddMatrix)
-  print("Pseudo solution : ", newStreets)
+  solution = None
+  matrixSolution = None
+  solverIterationCount = 20
+  for _ in range(solverIterationCount):
 
-  for curIndex, nextInter in enumerate(newStreets):
+    # Swap intersections
+    nodeIndex0 = random.randrange(matrixSize)
+    nodeIndex1 = random.randrange(matrixSize) + matrixSize
+    tempsNode = oddIntersections[nodeIndex0]
+    oddIntersections[nodeIndex0] = oddIntersections[nodeIndex1]
+    oddIntersections[nodeIndex1] = tempsNode
+    
+    
+    oddMatrix = [[99 for i in range(matrixSize)] for j in range(matrixSize)]
+    for i in range(matrixSize):
+      for j in range(matrixSize):
+        city.initTempCost()
+        travel = computeDikjstra(oddIntersections[i], oddIntersections[matrixSize+j], city)
+        #print("Final Travel : ", travel)
+        shortestCost = travel[-1].mTempCost
+        oddMatrix[i][j] = shortestCost
+
+##    print("Matrix : ")
+##    for i in range(matrixSize):
+##      print(oddMatrix[i])
+##    print("")
+    originalMatrix = copy.deepcopy(oddMatrix)
+    newStreets = hungarianAlgo(oddMatrix)
+    # print("Pseudo solution : ", newStreets)
+
+    if newStreets != None:
+    # Compute cost
+      currentCost = initialTotalCost
+      for curIndex, nextInter in enumerate(newStreets):
+        currentCost = currentCost + originalMatrix[curIndex][nextInter]
+    
+      if currentCost < minSolutionCost:
+        print("Found a better solution ", currentCost)
+        minSolutionCost = currentCost
+        solution = copy.deepcopy(newStreets)
+        matrixSolution = originalMatrix
+
+
+  # Solver end best solution found
+  for curIndex, nextInter in enumerate(solution):
     name = "ArtStr" + oddIntersections[curIndex].mName + "2" + oddIntersections[nextInter].mName
-    theStreet = Street(name, oddIntersections[curIndex], oddIntersections[nextInter], originalMatrix[curIndex][nextInter])
+    theStreet = Street(name, oddIntersections[curIndex], oddIntersections[nextInter], matrixSolution[curIndex][nextInter])
     city.mStreets[name] = theStreet
 
   print(city)
